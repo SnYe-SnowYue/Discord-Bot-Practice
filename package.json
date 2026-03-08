@@ -1,0 +1,25 @@
+{
+  "//": "專案的基本資訊",
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  
+  "//scripts": "定義可執行的腳本指令",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  
+  "//type": "指定使用 CommonJS 模組系統 (require/module.exports)",
+  "type": "commonjs",
+  
+  "//dependencies": "專案運行所需的套件（會一起部署到正式環境）",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1"
+  }
+}
