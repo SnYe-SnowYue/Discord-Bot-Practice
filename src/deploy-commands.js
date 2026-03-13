@@ -1,35 +1,50 @@
-// ===== Discord 斜線指令註冊程式 =====
-// 作用：將指令資訊上傳到 Discord 伺服器，讓使用者可以看到 /ping 等指令
-// 執行時機：新增或修改指令時執行一次即可（執行方式：node src/deploy-commands.js）
+// 載入 .env 環境變數
+require('dotenv').config();
 
-require('dotenv').config(); // 載入環境變數
+// Node.js 內建模組
+const fs = require('node:fs');     // 讀取資料夾與檔案
+const path = require('node:path'); // 組合路徑
 
+// discord.js REST 與路由工具
 const { REST, Routes } = require('discord.js');
 
-// ===== 收集要註冊的指令 =====
-// 將 commands 資料夾中的指令模組載入並轉換成 JSON 格式
-const pingCommand = require('./commands/ping');
-const commands = [
-  pingCommand.data.toJSON(), // 只註冊 data 部分（指令定義），不需要 execute 函式
-];
+// 用來存放所有要部署的 slash commands
+const commands = [];
 
-// 建立 REST 客戶端，用於與 Discord API 溝通
+// 找到 src/commands 資料夾
+const commandsPath = path.join(__dirname, 'commands');
+
+// 讀出 commands 資料夾裡所有 .js 指令檔
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+// 逐一載入指令並轉成 JSON
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath);
+
+  // 檢查指令格式是否正確
+  if ('data' in command && 'execute' in command) {
+    commands.push(command.data.toJSON());
+  } else {
+    console.log(`[WARNING] The command at ${filePath} is missing "data" or "execute".`);
+  }
+}
+
+// 建立 REST 客戶端，帶入 Bot Token
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-// ===== 執行註冊流程 =====
+// 立即執行部署
 (async () => {
   try {
-    console.log('開始註冊斜線指令...');
+    console.log('Started refreshing application (/) commands.');
 
-    // 使用 PUT 方法將指令上傳到指定的 Discord 伺服器（GUILD）
-    // PUT 會覆蓋舊的指令列表（不會累積舊指令）
     await rest.put(
       Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-      { body: commands }, // 上傳的指令陣列
+      { body: commands },
     );
 
-    console.log('✅ 指令註冊成功！');
+    console.log('✅ Deployed guild commands');
   } catch (error) {
-    console.error('❌ 註冊失敗：', error);
+    console.error(error);
   }
 })();
