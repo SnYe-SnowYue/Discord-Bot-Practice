@@ -1,11 +1,17 @@
 
-discord-bot/
-├── .env                      # 環境變數設定檔 (存放敏感資訊如 Token)
-├── package.json              # Node.js 專案配置檔 (依賴套件、腳本)
-├── package-lock.json         # 鎖定依賴套件的版本
-├── node_modules/             # npm 安裝的套件目錄
-└── src/                      # 原始碼目錄
-    ├── index.js              # 機器人主程式 (啟動和事件監聽)
-    ├── deploy-commands.js    # 指令註冊程式 (將指令註冊到 Discord)
-    └── commands/             # 指令模組目錄
-        └── ping.js           # /ping 指令實作
+Discord-Bot-Practice/
+├── .env                        # 環境變數設定檔 (Token / CLIENT_ID / GUILD_ID)
+├── .gitignore                  # Git 忽略設定
+├── README.md                   # 專案說明與使用方式
+├── PROJECT_STRUCTURE.md        # 專案結構說明文件
+├── RoadMap.txt                 # 開發規劃/筆記
+├── message.txt:Zone.Identifier # 下載檔附加資訊 (Windows ADS 匯入痕跡)
+├── package.json                # Node.js 專案設定 (腳本、依賴)
+├── package-lock.json           # 依賴版本鎖定
+├── node_modules/               # npm 安裝套件
+└── src/                        # 原始碼目錄
+    ├── index.js                # Bot 主程式：載入指令、監聽事件、登入
+    ├── deploy-commands.js      # 部署 slash commands 到指定 Guild
+    └── commands/               # 各 slash command 模組
+        ├── ping.js             # /ping 指令
+        └── about.js            # /about 指令

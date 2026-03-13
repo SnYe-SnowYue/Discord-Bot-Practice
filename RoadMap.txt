@@ -1,0 +1,199 @@
+以下是一份**從零開始、由基礎到進階**，面向新手的 **Discord Bot 完整學習計畫（12 週）**。重點會以目前 Discord 生態主流的 **Application Commands / Interactions（斜線指令）**為核心：斜線指令是最常見的指令入口 ([Discord 文件檔案][1])，而且能避開「解析一般訊息內容」帶來的權限與隱私風險（因為 **MESSAGE_CONTENT** 這類屬於特權 Intents，對已驗證 App 需要審核/核准）([Discord 文件檔案][2])。
+
+---
+
+## 你會做出什麼成果（學完能落地）
+
+1. **基礎功能 Bot**：/ping、/help、/settings（斜線指令 + 參數 + 權限檢查）([Discord 文件檔案][3])
+2. **互動式功能 Bot**：按鈕/選單/Modal 表單（互動元件）([Discord.js 教程][4])
+3. **可上線的生產級 Bot**：有資料庫、日誌、錯誤處理、部署、更新流程、Rate Limit 控制([Discord 文件檔案][5])
+4. **進階擴展**：Sharding（分片）、效能與擴展性概念 ([Discord.js 教程][6])
+
+---
+
+## 前置選型（不分心版）
+
+你只要選一條主線即可：
+
+* **Python 路線**：discord.py 2.x（Interactions/Slash Commands 在 2.0+ 是正式能力）([discord.py][7])
+* **Node.js 路線**：discord.js v14（教學資源多、工程化工具成熟）([Discord.js 教程][8])
+
+> 不管哪條，核心概念一致：**Gateway（事件）+ REST（呼叫 API）+ Interactions（斜線指令/互動元件）** ([Discord 文件檔案][9])
+
+---
+
+## 12 週學習計畫（每週建議 6–10 小時）
+
+### 第 0 週：環境與開發者設定（一次搞定）
+
+**目標**：Bot 能邀進伺服器並成功上線（本機跑起來）
+
+* 建立 Discord App / Bot、理解 OAuth2 邀請與 scopes（`bot`、`applications.commands`）([Discord 文件檔案][10])
+* 權限最小化（Permissions / 邀請時勾選必要權限）([Discord 文件檔案][11])
+* Intents 基礎：知道哪些是特權 Intents（Members/Presences/MessageContent）([Discord 支援中心][12])
+
+**交付物**：repo 初始化、README、用環境變數/設定檔管理 Token（不要硬寫在程式）
+
+---
+
+### 第 1 週：事件迴圈與最小可用 Bot（MVP）
+
+**目標**：理解 Bot「如何接收事件、如何回應」
+
+* Gateway 是事件入口；理解連線、Ready、基本事件處理 ([Discord 文件檔案][2])
+* 用 **/ping** 做第一個 Slash Command（不要先做文字解析）([Discord 文件檔案][1])
+
+**交付物**：/ping（含延遲顯示）、/about（顯示版本、runtime）
+
+---
+
+### 第 2 週：Slash Commands（進階用法）與指令架構
+
+**目標**：指令可維護、可擴充
+
+* Application Commands 有三種：Slash、User、Message（理解差異與入口）([Discord 文件檔案][3])
+* 參數（options）、子指令（subcommands/subcommand groups）、Autocomplete（若框架支援）
+* 指令分檔：commands/、handlers/、utils/（建立可擴展骨架）
+
+**交付物**：/help（分類列出指令）、/config set|get（先用記憶體存）
+
+---
+
+### 第 3 週：權限模型與安全邊界（新手最容易踩雷）
+
+**目標**：做出「不會亂踢人、亂刪訊息」的 Bot
+
+* Discord Permissions 與 role/channel overwrite 概念 ([Discord 文件檔案][11])
+* 指令層級權限：僅管理員可用、特定身分組可用
+* **避免依賴 MESSAGE_CONTENT**：大型/驗證 App 會需要審核，且沒有該 intent 時會拿不到一般訊息內容 ([Discord 文件檔案][2])
+
+**交付物**：/mod purge、/mod timeout（都加權限檢查與審計 log）
+
+---
+
+### 第 4 週：Interactions 深入（Buttons / Select / Modal）
+
+**目標**：把 Bot 做到「像 App」而不是只會回文字
+
+* 互動的本質是 **Interaction**：使用者操作會送 Interaction 給你的應用 ([Discord 文件檔案][9])
+* Buttons / Select menus 的狀態管理（custom_id、上下文）([Discord.js 教程][4])
+* Modal 表單（例如回報/建議/申請單）
+
+**交付物**：/ticket 開單（按鈕建立、選單分類、Modal 收集內容）
+
+---
+
+### 第 5 週：資料持久化（資料庫 / 設定保存）
+
+**目標**：Bot 重啟後資料不消失
+
+* 資料建模：guild_settings、user_profile、tickets、logs
+* SQLite（單機）或 PostgreSQL（上線）
+* 避免高頻寫入：快取 + 批次落盤（概念即可）
+
+**交付物**：/settings（可保存 prefix/語言/功能開關）、/profile（可保存使用者資料）
+
+---
+
+### 第 6 週：Rate Limit、重試、併發（變穩的關鍵）
+
+**目標**：不會動不動 429、也不會被斷線
+
+* Discord 有 per-route 與 global 的 Rate Limits，必須遵守 ([Discord 文件檔案][5])
+* Gateway 也有送出事件的速率限制（超過會被斷線）([Discord 文件檔案][2])
+* 併發控制：佇列、節流（throttle）、退避重試（backoff）
+
+**交付物**：大量操作指令（例如 /bulkrole）具備節流與進度回報
+
+---
+
+### 第 7 週：可觀測性（Logs / Metrics / 錯誤處理）
+
+**目標**：出問題你查得出來
+
+* 統一錯誤處理（try/catch、error middleware）
+* 結構化日誌（事件、guild、user、command、latency）
+* 重要事件告警（例如送到特定管理頻道）
+
+**交付物**：/status 顯示 uptime、延遲、最近錯誤計數；錯誤自動回報到 admin channel
+
+---
+
+### 第 8 週：部署與上線（生產環境）
+
+**目標**：24/7 穩定跑、可自動重啟
+
+* Process manager：PM2（Node 常用）([Discord.js 教程][13])
+* 環境變數、Secrets 管理、不同環境（dev/stage/prod）
+* 更新策略：滾動重啟、版本化、指令同步流程
+
+**交付物**：一鍵部署腳本（或 Docker 化）、重啟自動恢復、健康檢查
+
+---
+
+### 第 9 週：OAuth2 與授權（做「用戶登入/授權」類功能才需要）
+
+**目標**：理解 OAuth2 在 Discord 生態的用途
+
+* OAuth2 基礎、invite/public bot 概念 ([Discord 文件檔案][10])
+* 進階授權：讓使用者授權後做特定操作（依需求選做）
+
+**交付物（選做）**：簡易 Web 回呼流程（登入後顯示使用者資訊/伺服器列表）
+
+---
+
+### 第 10 週：擴展性（Sharding、效能、架構）
+
+**目標**：準備面對「很多伺服器/很多事件」
+
+* Sharding 概念與實作入口（discord.js ShardingManager 等）([Discord.js 教程][6])
+* 將功能拆成模組（或服務）：commands、events、db、cache
+
+**交付物**：可切換 sharding 模式的啟動方式（概念或實作其一）
+
+---
+
+### 第 11–12 週：畢業專案（Capstone）
+
+**目標**：做一個能展示的完整產品級 Bot（建議二選一）
+
+* **伺服器管理 Bot**：防洗版、工單、審計、設定面板（互動元件 + DB）
+* **排隊/預約 Bot**：隊列、超時提醒、延長、管理指令、紀錄查詢（互動元件 + 排程 + DB）
+
+**交付物清單（建議至少做到）**
+
+* 20+ 指令（含子指令）、5+ 互動流程（按鈕/選單/Modal）
+* 資料庫 schema + migration（或等價做法）
+* 完整 README（功能、安裝、權限、指令列表）
+* 基礎監控（/status + error log channel）
+* 基本 rate limit 保護與錯誤處理 ([Discord 文件檔案][5])
+
+---
+
+## 你在學的「核心觀念地圖」（建議照這個順序吸收）
+
+1. **Application Commands / Interactions**（Slash/User/Message + 回應流程）([Discord 文件檔案][3])
+2. **Permissions / OAuth2 邀請**（最小權限、正確 scopes）([Discord.js 教程][14])
+3. **Intents（尤其特權 Intents）**（不要一開始就依賴 message content）([Discord 支援中心][12])
+4. **Rate Limits（REST + Gateway）**（429 與斷線的根源）([Discord 文件檔案][5])
+5. **部署與可觀測性**（能跑、能修、能更新）([Discord.js 教程][13])
+6. **Sharding / Scaling**（大型化的入口）([Discord.js 教程][6])
+
+---
+
+如果你照這份 12 週計畫走，基本上會從「只會寫範例」進到「能做可上線、可維護、可擴展的 Discord Bot」。
+
+[1]: https://docs.discord.com/developers/interactions/overview?utm_source=chatgpt.com "Overview of Interactions - Documentation"
+[2]: https://docs.discord.com/developers/events/gateway?utm_source=chatgpt.com "Gateway - Documentation"
+[3]: https://docs.discord.com/developers/interactions/application-commands?utm_source=chatgpt.com "Application Commands - Documentation"
+[4]: https://discordjs.guide/interactive-components/interactions?utm_source=chatgpt.com "Interactions"
+[5]: https://docs.discord.com/developers/topics/rate-limits?utm_source=chatgpt.com "Rate Limits - Documentation"
+[6]: https://discordjs.guide/sharding?utm_source=chatgpt.com "App Sharding | discord.js"
+[7]: https://discordpy.readthedocs.io/en/latest/interactions/api.html?utm_source=chatgpt.com "Interactions API Reference - Discord.py"
+[8]: https://discordjs.guide/popular-topics/intents?utm_source=chatgpt.com "Gateway Intents | discord.js"
+[9]: https://docs.discord.com/developers/interactions/receiving-and-responding?utm_source=chatgpt.com "Interactions - Documentation"
+[10]: https://docs.discord.com/developers/topics/oauth2?utm_source=chatgpt.com "OAuth2 - Documentation"
+[11]: https://docs.discord.com/developers/topics/permissions?utm_source=chatgpt.com "Permissions - Documentation"
+[12]: https://support-dev.discord.com/hc/en-us/articles/6207308062871-What-are-Privileged-Intents?utm_source=chatgpt.com "What are Privileged Intents?"
+[13]: https://discordjs.guide/legacy/improving-dev-environment/pm2?utm_source=chatgpt.com "PM2"
+[14]: https://discordjs.guide/legacy/preparations/adding-your-app?utm_source=chatgpt.com "Adding Your App"
