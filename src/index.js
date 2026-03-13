@@ -6,6 +6,9 @@ require('dotenv').config();
 
 // 引入 discord.js 核心功能
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
+const fs = require('node:fs');     // 讀取檔案/資料夾
+const path = require('node:path'); // 組合路徑
+
 
 // 建立機器人客戶端實例
 const client = new Client({
@@ -16,9 +19,22 @@ const client = new Client({
 // Collection 是 discord.js 提供的 Map 擴充，用來儲存指令
 client.commands = new Collection();
 
-// 手動載入 ping 指令（未來可改成自動掃描 commands 資料夾）
-const pingCommand = require('./commands/ping');
-client.commands.set(pingCommand.data.name, pingCommand); // key: 指令名稱, value: 指令模組
+// 自動讀取 commands 資料夾內所有 .js 指令檔
+const commandsPath = path.join(__dirname, 'commands'); // 組合出 commands 資料夾路徑
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js')); // 只保留 .js 檔案
+
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file); // 取得每個指令檔完整路徑
+  const command = require(filePath); // 載入指令模組
+
+  // 檢查指令格式是否正確
+  if ('data' in command && 'execute' in command) {
+    client.commands.set(command.data.name, command); // 存進 Collection
+  } else {
+    console.log(`[WARNING] The command at ${filePath} is missing "data" or "execute".`);
+  }
+}
+
 
 // ===== 事件監聽：機器人準備就緒 =====
 // once() 表示只執行一次（登入成功後觸發）
