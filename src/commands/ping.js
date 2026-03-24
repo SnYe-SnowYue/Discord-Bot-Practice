@@ -1,21 +1,25 @@
-// ===== /ping 指令模組 =====
-// 這是一個簡單的測試指令，用來確認機器人是否正常運作
-
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
-  // ===== data: 指令定義 =====
-  // 這部分會被 deploy-commands.js 讀取並註冊到 Discord
-  // 決定指令在 Discord 中的顯示名稱、說明、參數等
   data: new SlashCommandBuilder()
-    .setName('ping')                // 指令名稱（使用者輸入：/ping）
-    .setDescription('測試機器人回應'), // 指令說明（會顯示在 Discord 介面）
+    .setName('ping')
+    .setDescription('查看 Bot 延遲'),
 
-  // ===== execute: 指令執行邏輯 =====
-  // 當使用者執行 /ping 時，index.js 會呼叫這個函式
-  // interaction 參數包含執行指令的使用者、頻道等資訊
   async execute(interaction) {
-    // interaction.reply() 用來回應使用者
-    await interaction.reply('Pong!');
+    const latency = Date.now() - interaction.createdTimestamp;
+
+    // 建立一顆按鈕，customId 用來識別哪顆按鈕被按
+    const button = new ButtonBuilder()
+      .setCustomId('ping_recheck')       // 識別用 ID
+      .setLabel('🔄 再測一次')
+      .setStyle(ButtonStyle.Primary);    // 藍色按鈕
+
+    // ActionRow 是按鈕/選單的容器（Discord 規定必須裝在 Row 裡）
+    const row = new ActionRowBuilder().addComponents(button);
+
+    await interaction.reply({
+      content: `🏓 延遲：${latency}ms`,
+      components: [row],   // 把按鈕排附加到訊息
+    });
   },
 };
