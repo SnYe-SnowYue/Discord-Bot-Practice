@@ -1,3 +1,5 @@
+# PROJECT_STRUCTURE
+
 Discord-Bot-Practice/
 ├── .env                         # 本機環境變數（不提交）
 ├── .env.example                 # 環境變數範本
