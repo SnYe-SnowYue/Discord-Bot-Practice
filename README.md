@@ -9,6 +9,8 @@
 - 目前內建指令：
   - `/ping`：回傳 `Pong!`
   - `/about`：顯示機器人資訊
+  - `/config set|get`：設定與查詢伺服器層級設定
+  - `/mod purge|timeout`：管理員工具（目前回覆建置中）
 
 ## 環境需求
 
@@ -20,6 +22,12 @@
 
 ```bash
 npm install
+```
+
+如果新電腦尚未安裝 Node.js（Windows），可先安裝 LTS：
+
+```powershell
+winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
 ```
 
 ## 環境變數設定

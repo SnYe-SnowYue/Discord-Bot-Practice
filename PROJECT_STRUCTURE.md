@@ -1,5 +1,6 @@
 Discord-Bot-Practice/
-├── .env                         # 環境變數設定檔 (DISCORD_TOKEN / CLIENT_ID / GUILD_ID)
+├── .env                         # 本機環境變數（不提交）
+├── .env.example                 # 環境變數範本
 ├── .git/                        # Git 版本控制資料
 ├── .gitignore                   # Git 忽略設定
 ├── package-lock.json            # 依賴版本鎖定
@@ -14,6 +15,7 @@ Discord-Bot-Practice/
   ├── commands/                # 各 slash command 模組
   │   ├── about.js             # /about 指令
   │   ├── config.js            # /config 指令 (管理伺服器設定)
+  │   ├── mod.js               # /mod 指令 (管理用途)
   │   └── ping.js              # /ping 指令
   ├── events/                  # Discord 事件模組
   │   ├── interactionCreate.js # 互動事件：分派 slash command 並處理錯誤
@@ -23,7 +25,3 @@ Discord-Bot-Practice/
   │   └── eventHandler.js      # 掃描並綁定所有事件監聽
   └── utils/                   # 共用工具模組
     └── configStore.js       # 設定資料讀寫與儲存
-
-備註：
-- 目前專案採用「handler + event module + utility」架構。
-- `src/index.js` 專注於啟動流程，事件邏輯在 `src/events/`，自動載入邏輯在 `src/handlers/`，共用資料邏輯在 `src/utils/`。
