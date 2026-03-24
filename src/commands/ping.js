@@ -20,6 +20,8 @@ module.exports = {
 
     // round-trip latency：回覆訊息建立時間 - 互動建立時間
     const roundTrip = reply.createdTimestamp - interaction.createdTimestamp;
+    const wsPing = interaction.client.ws.ping;
+    const wsText = wsPing < 0 ? '測量中' : `${Math.round(wsPing)}ms`;
 
     // 建立按鈕
     const button = new ButtonBuilder()
@@ -33,7 +35,7 @@ module.exports = {
     await interaction.editReply({
       content:
         `🏓 Bot 回應延遲：${roundTrip}ms\n` +
-        `📡 WebSocket 延遲：${Math.round(interaction.client.ws.ping)}ms`,
+        `📡 WebSocket 延遲：${wsText}`,
       components: [row],
     });
   },

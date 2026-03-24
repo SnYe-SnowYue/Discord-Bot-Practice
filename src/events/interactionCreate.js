@@ -35,9 +35,11 @@ module.exports = {
         // 取得這次按鈕互動的回覆訊息
         const reply = await interaction.fetchReply();
         const roundTrip = reply.createdTimestamp - interaction.createdTimestamp;
+        const wsPing = interaction.client.ws.ping;
+        const wsText = wsPing < 0 ? '測量中' : `${Math.round(wsPing)}ms`;
 
         await interaction.editReply(
-          `🏓 重新測量延遲：${roundTrip}ms\n📡 WebSocket 延遲：${Math.round(interaction.client.ws.ping)}ms`
+          `🏓 重新測量延遲：${roundTrip}ms\n📡 WebSocket 延遲：${wsText}`
         );
       }
     }
