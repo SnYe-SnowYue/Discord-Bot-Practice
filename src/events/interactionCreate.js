@@ -73,15 +73,27 @@ module.exports = {
     // =========================
     if (interaction.isStringSelectMenu()) {
       if (interaction.customId === 'panel_select_category') {
+        // 取得選到的 value
         const selectedValue = interaction.values[0];
 
+        // 用物件把 value 對應成中文顯示名稱
+        const categoryMap = {
+          general: '一般設定',
+          moderation: '管理設定',
+          fun: '娛樂設定',
+        };
+
+        // 如果找不到，就顯示「未知分類」
+        const categoryName = categoryMap[selectedValue] || '未知分類';
+
+        // 回覆使用者
         await interaction.reply({
-          content: `你選擇的分類是：${selectedValue}`,
+          content: `你選擇的是：${categoryName}`,
           ephemeral: true,
         });
-      }
 
-      return;
+        return;
+      }
     }
   },
 };
