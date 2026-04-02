@@ -16,6 +16,43 @@ const {
 const TICKET_CATEGORY_ID = '1489073540656267344';
 const SUPPORT_ROLE_ID = '854569830673809429';
 const creatingTicketUsers = new Set();
+const pendingTicketUsers = new Map();
+
+async function findUserOpenTicketChannel(guild, userId) {
+  await guild.channels.fetch();
+
+  return guild.channels.cache.find((channel) => {
+    if (channel.type !== ChannelType.GuildText) return false;
+    if (channel.parentId !== TICKET_CATEGORY_ID) return false;
+
+    const userOverwrite = channel.permissionOverwrites.cache.get(userId);
+    if (!userOverwrite) return false;
+
+    return userOverwrite.allow.has(PermissionFlagsBits.ViewChannel);
+  });
+}
+
+function setPendingTicketLock(userId) {
+  const existingTimeout = pendingTicketUsers.get(userId);
+  if (existingTimeout) {
+    clearTimeout(existingTimeout);
+  }
+
+  const timeoutId = setTimeout(() => {
+    pendingTicketUsers.delete(userId);
+  }, 5 * 60 * 1000);
+
+  pendingTicketUsers.set(userId, timeoutId);
+}
+
+function clearPendingTicketLock(userId) {
+  const timeoutId = pendingTicketUsers.get(userId);
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
+
+  pendingTicketUsers.delete(userId);
+}
 
 module.exports = {
   name: 'interactionCreate',
@@ -84,6 +121,21 @@ module.exports = {
       }
 
       if (interaction.customId === 'ticket_start') {
+        const existingChannel = await findUserOpenTicketChannel(
+          interaction.guild,
+          interaction.user.id
+        );
+
+        if (existingChannel) {
+          await interaction.reply({
+            content: `⚠️ 你已經有一張 Ticket：${existingChannel}`,
+            ephemeral: true,
+          });
+          return;
+        }
+
+        setPendingTicketLock(interaction.user.id);
+
         const row = new ActionRowBuilder().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId('ticket_category_select') // 之後處理分類選擇
@@ -160,6 +212,16 @@ module.exports = {
       }
 
       if (interaction.customId === 'ticket_category_select') {
+        if (creatingTicketUsers.has(interaction.user.id)) {
+          await interaction.reply({
+            content: '⏳ 你的 Ticket 正在建立中，請稍候再試。',
+            ephemeral: true,
+          });
+          return;
+        }
+
+        setPendingTicketLock(interaction.user.id);
+
         // 取得使用者選到的分類
         const category = interaction.values[0];
 
@@ -206,6 +268,7 @@ module.exports = {
         }
 
         creatingTicketUsers.add(interaction.user.id);
+        clearPendingTicketLock(interaction.user.id);
 
         try {
         // 從 customId 拆出分類
@@ -224,21 +287,11 @@ module.exports = {
         const title = interaction.fields.getTextInputValue('ticket_title');
         const description = interaction.fields.getTextInputValue('ticket_description');
 
-        // 把使用者名稱整理成安全的頻道名稱
-        const safeUserName = interaction.user.username
-          .toLowerCase()
-          .replace(/[^a-z0-9-_]/g, '-');
-
-        const channelName = `ticket-${safeUserName}`;
-
-        // 先同步抓最新頻道狀態，避免 cache 延遲導致重複建立
-        await interaction.guild.channels.fetch();
-
-        // 建立頻道前先檢查是否已有同名 ticket
-        const existingChannel = interaction.guild.channels.cache.find((channel) => {
-          if (channel.type !== ChannelType.GuildText) return false;
-          return channel.name === channelName;
-        });
+        // 建立頻道前先檢查該使用者是否已有開啟中的 Ticket
+        const existingChannel = await findUserOpenTicketChannel(
+          interaction.guild,
+          interaction.user.id
+        );
 
         if (existingChannel) {
           await interaction.reply({
@@ -250,7 +303,7 @@ module.exports = {
 
         // 建立 ticket 頻道
         const ticketChannel = await interaction.guild.channels.create({
-          name: channelName,
+          name: `ticket-${interaction.user.id}`,
           type: ChannelType.GuildText,
           parent: TICKET_CATEGORY_ID, // 放進指定分類
           permissionOverwrites: [
