@@ -18,7 +18,8 @@ Discord-Bot-Practice/
   │   ├── config.js            # /config 指令 (管理伺服器設定)
   │   ├── mod.js               # /mod 指令 (管理用途)
   │   ├── panel.js             # /panel 指令
-  │   └── ping.js              # /ping 指令
+  │   ├── ping.js              # /ping 指令
+  │   └── ticket.js            # /ticket 指令
   ├── events/                  # Discord 事件模組
   │   ├── interactionCreate.js # 互動事件：分派 slash command 並處理錯誤
   │   └── ready.js             # ready 事件：Bot 上線提示
