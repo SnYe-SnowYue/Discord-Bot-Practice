@@ -4,6 +4,11 @@ const {
   ChannelType,
   PermissionFlagsBits,
   EmbedBuilder,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require('discord.js');
 
 const TICKET_CATEGORY_ID = '1489073540656267344';
@@ -75,6 +80,39 @@ module.exports = {
         return;
       }
 
+      if (interaction.customId === 'ticket_start') {
+        const row = new ActionRowBuilder().addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId('ticket_category_select') // 之後處理分類選擇
+            .setPlaceholder('請選擇 Ticket 分類')
+            .addOptions(
+              {
+                label: '一般問題',
+                description: '一般使用問題或協助需求',
+                value: 'general',
+              },
+              {
+                label: 'Bug 回報',
+                description: '回報功能異常或錯誤',
+                value: 'bug',
+              },
+              {
+                label: '功能建議',
+                description: '提出新功能想法',
+                value: 'suggestion',
+              }
+            )
+        );
+
+        await interaction.reply({
+          content: '請先選擇 Ticket 分類。',
+          components: [row],
+          ephemeral: true,
+        });
+
+        return;
+      }
+
       return;
     }
 
@@ -98,6 +136,38 @@ module.exports = {
           ephemeral: true,
         });
 
+        return;
+      }
+
+      if (interaction.customId === 'ticket_category_select') {
+        // 取得使用者選到的分類
+        const category = interaction.values[0];
+
+        // 把分類帶進 modal 的 customId，送出時比較好判斷
+        const modal = new ModalBuilder()
+          .setCustomId(`ticket_modal_${category}`)
+          .setTitle('建立 Ticket');
+
+        const titleInput = new TextInputBuilder()
+          .setCustomId('ticket_title')
+          .setLabel('請輸入問題標題')
+          .setStyle(TextInputStyle.Short)
+          .setPlaceholder('例如：某功能無法使用')
+          .setRequired(true);
+
+        const descriptionInput = new TextInputBuilder()
+          .setCustomId('ticket_description')
+          .setLabel('請輸入詳細內容')
+          .setStyle(TextInputStyle.Paragraph)
+          .setPlaceholder('請盡量描述清楚發生了什麼事')
+          .setRequired(true);
+
+        const firstRow = new ActionRowBuilder().addComponents(titleInput);
+        const secondRow = new ActionRowBuilder().addComponents(descriptionInput);
+
+        modal.addComponents(firstRow, secondRow);
+
+        await interaction.showModal(modal);
         return;
       }
     }
