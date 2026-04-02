@@ -1,4 +1,14 @@
 // src/events/interactionCreate.js
+
+const {
+  ChannelType,
+  PermissionFlagsBits,
+  EmbedBuilder,
+} = require('discord.js');
+
+const TICKET_CATEGORY_ID = '1489073540656267344';
+const SUPPORT_ROLE_ID = '854569830673809429';
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
@@ -96,18 +106,82 @@ module.exports = {
     // 4. 處理 Modal Submit
     // =========================
     if (interaction.isModalSubmit()) {
-      // 只處理 /ticket 的表單
       if (interaction.customId === 'ticket_modal') {
-        // 讀取使用者在 Modal 裡輸入的內容
+        // 取得使用者填寫的內容
         const title = interaction.fields.getTextInputValue('ticket_title');
         const description = interaction.fields.getTextInputValue('ticket_description');
 
-        // 回覆確認訊息（只有提交者自己看得到）
+        // 把使用者名稱整理成安全的頻道名稱
+        const safeUserName = interaction.user.username
+          .toLowerCase()
+          .replace(/[^a-z0-9-_]/g, '-');
+
+        const channelName = `ticket-${safeUserName}`;
+
+        // 建立 ticket 頻道
+        const ticketChannel = await interaction.guild.channels.create({
+          name: channelName,
+          type: ChannelType.GuildText,
+          parent: TICKET_CATEGORY_ID, // 放進指定分類
+          permissionOverwrites: [
+            {
+              // 預設所有人都看不到
+              id: interaction.guild.id,
+              deny: [PermissionFlagsBits.ViewChannel],
+            },
+            {
+              // 開單的人可以看到並發言
+              id: interaction.user.id,
+              allow: [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory,
+              ],
+            },
+            {
+              // 支援人員也能看到
+              id: SUPPORT_ROLE_ID,
+              allow: [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory,
+              ],
+            },
+          ],
+        });
+
+        // 建立一個比較清楚的開場訊息
+        const ticketEmbed = new EmbedBuilder()
+          .setTitle('🎫 新的 Ticket')
+          .setDescription('請在此頻道協助使用者處理問題。')
+          .addFields(
+            {
+              name: '開單者',
+              value: `${interaction.user}`,
+              inline: true,
+            },
+            {
+              name: '標題',
+              value: title,
+              inline: true,
+            },
+            {
+              name: '詳細內容',
+              value: description,
+            }
+          )
+          .setColor(0x5865F2)
+          .setTimestamp();
+
+        // 在 ticket 頻道送出第一則訊息
+        await ticketChannel.send({
+          content: `${interaction.user} <@&${SUPPORT_ROLE_ID}>`,
+          embeds: [ticketEmbed],
+        });
+
+        // 建立成功後，先回覆使用者
         await interaction.reply({
-          content:
-            `✅ 你的 Ticket 已送出！\n` +
-            `**標題：** ${title}\n` +
-            `**內容：** ${description}`,
+          content: `✅ 你的 Ticket 已建立：${ticketChannel}`,
           ephemeral: true,
         });
 
