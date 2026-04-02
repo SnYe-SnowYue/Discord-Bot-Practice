@@ -1,0 +1,38 @@
+// 匯入按鈕需要的建構器
+const {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require('discord.js');
+
+// 在送出 ticket 開場訊息時加按鈕
+const closeRow = new ActionRowBuilder().addComponents(
+  new ButtonBuilder()
+    .setCustomId('ticket_close')
+    .setLabel('🔒 關閉 Ticket')
+    .setStyle(ButtonStyle.Danger)
+);
+
+await ticketChannel.send({
+  content: `${interaction.user} <@&${SUPPORT_ROLE_ID}>`,
+  embeds: [ticketEmbed],
+  components: [closeRow],
+});
+
+// 在 isButton() 區塊新增處理
+if (interaction.customId === 'ticket_close') {
+  await interaction.reply({
+    content: '🗑️ 這個 Ticket 將在 3 秒後關閉。',
+    ephemeral: true,
+  });
+
+  setTimeout(async () => {
+    try {
+      await interaction.channel.delete();
+    } catch (error) {
+      console.error('刪除 Ticket 頻道失敗：', error);
+    }
+  }, 3000);
+
+  return;
+}

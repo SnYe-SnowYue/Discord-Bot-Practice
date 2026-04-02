@@ -9,10 +9,13 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  ButtonBuilder,
+  ButtonStyle,
 } = require('discord.js');
 
 const TICKET_CATEGORY_ID = '1489073540656267344';
 const SUPPORT_ROLE_ID = '854569830673809429';
+const creatingTicketUsers = new Set();
 
 module.exports = {
   name: 'interactionCreate',
@@ -113,6 +116,23 @@ module.exports = {
         return;
       }
 
+      if (interaction.customId === 'ticket_close') {
+        await interaction.reply({
+          content: '🗑️ 這個 Ticket 將在 3 秒後關閉。',
+          ephemeral: true,
+        });
+
+        setTimeout(async () => {
+          try {
+            await interaction.channel.delete();
+          } catch (error) {
+            console.error('刪除 Ticket 頻道失敗：', error);
+          }
+        }, 3000);
+
+        return;
+      }
+
       return;
     }
 
@@ -176,7 +196,30 @@ module.exports = {
     // 4. 處理 Modal Submit
     // =========================
     if (interaction.isModalSubmit()) {
-      if (interaction.customId === 'ticket_modal') {
+      if (interaction.customId.startsWith('ticket_modal_')) {
+        if (creatingTicketUsers.has(interaction.user.id)) {
+          await interaction.reply({
+            content: '⏳ 你的 Ticket 正在建立中，請稍候再試。',
+            ephemeral: true,
+          });
+          return;
+        }
+
+        creatingTicketUsers.add(interaction.user.id);
+
+        try {
+        // 從 customId 拆出分類
+        const category = interaction.customId.replace('ticket_modal_', '');
+
+        // 把分類代碼轉成可讀名稱
+        const categoryMap = {
+          general: '一般問題',
+          bug: 'Bug 回報',
+          suggestion: '功能建議',
+        };
+
+        const categoryName = categoryMap[category] || '未知分類';
+
         // 取得使用者填寫的內容
         const title = interaction.fields.getTextInputValue('ticket_title');
         const description = interaction.fields.getTextInputValue('ticket_description');
@@ -187,6 +230,23 @@ module.exports = {
           .replace(/[^a-z0-9-_]/g, '-');
 
         const channelName = `ticket-${safeUserName}`;
+
+        // 先同步抓最新頻道狀態，避免 cache 延遲導致重複建立
+        await interaction.guild.channels.fetch();
+
+        // 建立頻道前先檢查是否已有同名 ticket
+        const existingChannel = interaction.guild.channels.cache.find((channel) => {
+          if (channel.type !== ChannelType.GuildText) return false;
+          return channel.name === channelName;
+        });
+
+        if (existingChannel) {
+          await interaction.reply({
+            content: `⚠️ 你已經有一張 Ticket：${existingChannel}`,
+            ephemeral: true,
+          });
+          return;
+        }
 
         // 建立 ticket 頻道
         const ticketChannel = await interaction.guild.channels.create({
@@ -226,6 +286,11 @@ module.exports = {
           .setDescription('請在此頻道協助使用者處理問題。')
           .addFields(
             {
+              name: '分類',
+              value: categoryName,
+              inline: true,
+            },
+            {
               name: '開單者',
               value: `${interaction.user}`,
               inline: true,
@@ -243,10 +308,18 @@ module.exports = {
           .setColor(0x5865F2)
           .setTimestamp();
 
+        const closeRow = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('ticket_close')
+            .setLabel('🔒 關閉 Ticket')
+            .setStyle(ButtonStyle.Danger)
+        );
+
         // 在 ticket 頻道送出第一則訊息
         await ticketChannel.send({
           content: `${interaction.user} <@&${SUPPORT_ROLE_ID}>`,
           embeds: [ticketEmbed],
+          components: [closeRow],
         });
 
         // 建立成功後，先回覆使用者
@@ -256,6 +329,9 @@ module.exports = {
         });
 
         return;
+        } finally {
+          creatingTicketUsers.delete(interaction.user.id);
+        }
       }
     }
   },
